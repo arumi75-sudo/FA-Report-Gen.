@@ -44,7 +44,7 @@ echo [2/3] Backend 시작 (FastAPI, port 8000)...
 python -m uvicorn --version >nul 2>&1
 if errorlevel 1 (
     echo   -^> 패키지 설치 중... (처음 한 번만 실행됩니다)
-    pip install -r backend\requirements.txt
+    pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org -r backend\requirements.txt
     if errorlevel 1 (
         echo   [오류] pip install 실패. 위 오류 메시지를 확인하세요.
         goto :error
