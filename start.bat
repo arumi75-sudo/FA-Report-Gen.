@@ -4,9 +4,10 @@ title FA Report Generator - LG에너지솔루션
 
 cd /d "%~dp0"
 
-echo ╔══════════════════════════════════════════════╗
-echo ║    FA Report Generator - LG에너지솔루션     ║
-echo ╚══════════════════════════════════════════════╝
+echo.
+echo  ====================================================
+echo    FA Report Generator - LG에너지솔루션
+echo  ====================================================
 echo.
 
 :: logs 폴더 생성
@@ -40,10 +41,9 @@ if errorlevel 1 (
 echo.
 echo [2/3] Backend 시작 (FastAPI, port 8000)...
 
-:: uvicorn 확인 (python -m uvicorn 방식이 더 안정적)
 python -m uvicorn --version >nul 2>&1
 if errorlevel 1 (
-    echo   -^> 패키지 설치 중...
+    echo   -^> 패키지 설치 중... (처음 한 번만 실행됩니다)
     pip install -r backend\requirements.txt
     if errorlevel 1 (
         echo   [오류] pip install 실패. 위 오류 메시지를 확인하세요.
@@ -52,7 +52,7 @@ if errorlevel 1 (
 )
 
 start "FA-Backend" cmd /k "cd /d %~dp0 && python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload"
-echo   -^> Backend 시작 중 (새 창에서 실행됩니다)...
+echo   -^> Backend 시작 중...
 timeout /t 4 /nobreak >nul
 
 curl -s http://localhost:8000/api/health >nul 2>&1
@@ -60,7 +60,7 @@ if errorlevel 1 (
     echo   [오류] Backend 시작 실패. 열린 Backend 창의 오류를 확인하세요.
     goto :error
 )
-echo   [OK] Backend 시작됨 ^(http://localhost:8000^)
+echo   [OK] Backend 시작됨 (http://localhost:8000)
 
 :: ─────────────────────────────────────
 :: [3/3] Frontend 시작
@@ -82,21 +82,21 @@ if not exist "frontend\node_modules" (
 
 start "FA-Frontend" cmd /k "cd /d %~dp0frontend && npm run dev"
 timeout /t 4 /nobreak >nul
-echo   [OK] Frontend 시작됨 ^(http://localhost:5173^)
+echo   [OK] Frontend 시작됨 (http://localhost:5173)
 
 :: ─────────────────────────────────────
 :: 완료
 :: ─────────────────────────────────────
 echo.
-echo ══════════════════════════════════════════════
-echo   [완료] 시스템 시작 완료
+echo  ====================================================
+echo    [완료] 시스템 시작 완료
 echo.
-echo   웹 UI:    http://localhost:5173
-echo   API:      http://localhost:8000
-echo   API 문서: http://localhost:8000/docs
+echo    웹 UI:    http://localhost:5173
+echo    API:      http://localhost:8000
+echo    API 문서: http://localhost:8000/docs
 echo.
-echo   종료하려면 Backend/Frontend 창을 닫으세요.
-echo ══════════════════════════════════════════════
+echo    종료: Backend / Frontend 창을 닫으세요
+echo  ====================================================
 echo.
 
 timeout /t 2 /nobreak >nul
@@ -108,7 +108,7 @@ goto :eof
 
 :error
 echo.
-echo ══════════════════════════════════════════════
-echo   [실패] 위 오류를 확인하고 다시 시도하세요.
-echo ══════════════════════════════════════════════
+echo  ====================================================
+echo    [실패] 위 오류를 확인하고 다시 시도하세요.
+echo  ====================================================
 pause
