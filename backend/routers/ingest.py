@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 from pydantic import BaseModel
 
 from backend.database import get_db
@@ -13,7 +12,6 @@ router = APIRouter(prefix="/api/ingest", tags=["ingest"])
 
 class TextIngestRequest(BaseModel):
     content: str
-    model: str = "exaone3.5:7.8b"
 
 
 class IngestResponse(BaseModel):
@@ -27,13 +25,12 @@ class IngestResponse(BaseModel):
 
 @router.post("/text", response_model=IngestResponse)
 async def ingest_text(req: TextIngestRequest, db: AsyncSession = Depends(get_db)):
-    return await _process_content(req.content, None, req.model, db)
+    return await _process_content(req.content, None, db)
 
 
 @router.post("/file", response_model=IngestResponse)
 async def ingest_file(
     file: UploadFile = File(...),
-    model: str = Form(default="exaone3.5:7.8b"),
     db: AsyncSession = Depends(get_db),
 ):
     if not file.filename:
@@ -45,28 +42,24 @@ async def ingest_file(
     except ValueError as e:
         raise HTTPException(400, str(e))
 
-    return await _process_content(text, file.filename, model, db)
+    return await _process_content(text, file.filename, db)
 
 
 async def _process_content(
-    text: str, filename: str | None, model: str, db: AsyncSession
+    text: str, filename: str | None, db: AsyncSession
 ) -> IngestResponse:
-    # 1. 분석
-    analysis = await analyzer.analyze(text, model)
+    analysis = await analyzer.analyze(text)
 
-    # 2. InputData 저장
     input_data = InputData(raw_content=text, file_name=filename)
     db.add(input_data)
     await db.flush()
 
-    # 3. 계층 분류 및 DB 매핑
     site_id, project_id, issue_id = await categorizer.categorize(db, analysis, input_data.id)
     input_data.site_id = site_id
     input_data.project_id = project_id
     input_data.issue_id = issue_id
 
-    # 4. 요약 생성
-    items = await summarizer.summarize(db, input_data.id, text, model)
+    items = await summarizer.summarize(db, input_data.id, text)
 
     await db.commit()
 

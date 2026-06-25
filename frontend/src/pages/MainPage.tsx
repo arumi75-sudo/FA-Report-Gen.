@@ -8,7 +8,6 @@ import ChecklistPanel from '../components/ChecklistPanel'
 import ReportOutput from '../components/ReportOutput'
 
 export default function MainPage() {
-  const [model, setModel] = useState('exaone3.5:7.8b')
   const [sites, setSites] = useState<Site[]>([])
   const [items, setItems] = useState<ReportItem[]>([])
   const [selectedSiteId, setSelectedSiteId] = useState<number | null>(null)
@@ -53,16 +52,14 @@ export default function MainPage() {
     )
   }
 
-  const handleReportGenerated = (_report: Report) => {
-    // 성공 시 특별한 처리 없음 — ReportOutput이 자체 표시
-  }
+  const handleReportGenerated = (_report: Report) => {}
 
   return (
     <div className="grid grid-cols-12 gap-4 h-full">
       {/* 좌측: 모델 선택 + 입력 패널 + 사이트 트리 */}
       <div className="col-span-3 flex flex-col gap-4">
-        <ModelSelector value={model} onChange={setModel} />
-        <InputPanel model={model} onSuccess={handleIngestSuccess} />
+        <ModelSelector />
+        <InputPanel onSuccess={handleIngestSuccess} />
         <SiteTree
           sites={sites}
           selectedSiteId={selectedSiteId}
@@ -78,7 +75,6 @@ export default function MainPage() {
       {/* 우측: 보고서 출력 */}
       <div className="col-span-5">
         <ReportOutput
-          model={model}
           siteId={selectedSiteId}
           onGenerated={handleReportGenerated}
         />

@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse
 import os
 
 from backend.database import init_db
-from backend.routers import ingest, sites, reports, models as models_router
+from backend.routers import ingest, sites, reports
 
 
 @asynccontextmanager
@@ -33,13 +33,17 @@ app.add_middleware(
 app.include_router(ingest.router)
 app.include_router(sites.router)
 app.include_router(reports.router)
-app.include_router(models_router.router)
 
 
 @app.get("/api/health")
 async def health():
     return {"status": "ok", "service": "FA Report Generator"}
 
+
+# Word 출력 파일 서빙
+outputs_dir = os.path.join(os.path.dirname(__file__), "..", "outputs")
+os.makedirs(outputs_dir, exist_ok=True)
+app.mount("/outputs", StaticFiles(directory=outputs_dir), name="outputs")
 
 # 프로덕션에서 React 빌드 서빙
 static_dir = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")

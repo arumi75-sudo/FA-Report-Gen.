@@ -1,16 +1,15 @@
 import { useState } from 'react'
 import axios from 'axios'
 import ReactMarkdown from 'react-markdown'
-import { FileOutput, Loader2, Download, Copy, Check } from 'lucide-react'
+import { FileOutput, Loader2, Download, Copy, Check, FileDown } from 'lucide-react'
 import { Report } from '../types'
 
 interface Props {
-  model: string
   siteId: number | null
   onGenerated: (report: Report) => void
 }
 
-export default function ReportOutput({ model, siteId, onGenerated }: Props) {
+export default function ReportOutput({ siteId, onGenerated }: Props) {
   const [title, setTitle] = useState('현장 현황 보고서')
   const [loading, setLoading] = useState(false)
   const [report, setReport] = useState<Report | null>(null)
@@ -21,7 +20,6 @@ export default function ReportOutput({ model, siteId, onGenerated }: Props) {
     try {
       const res = await axios.post<Report>('/api/reports/generate', {
         title,
-        model,
         site_id: siteId,
       })
       setReport(res.data)
@@ -40,7 +38,7 @@ export default function ReportOutput({ model, siteId, onGenerated }: Props) {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const download = () => {
+  const downloadTxt = () => {
     if (!report) return
     const blob = new Blob([report.final_content], { type: 'text/plain;charset=utf-8' })
     const url = URL.createObjectURL(blob)
@@ -49,6 +47,14 @@ export default function ReportOutput({ model, siteId, onGenerated }: Props) {
     a.download = `${report.title}_${new Date().toISOString().slice(0, 10)}.txt`
     a.click()
     URL.revokeObjectURL(url)
+  }
+
+  const downloadWord = () => {
+    if (!report?.download_url) return
+    const a = document.createElement('a')
+    a.href = report.download_url
+    a.download = `${report.title}.docx`
+    a.click()
   }
 
   return (
@@ -100,12 +106,21 @@ export default function ReportOutput({ model, siteId, onGenerated }: Props) {
                 {copied ? '복사됨' : '복사'}
               </button>
               <button
-                onClick={download}
+                onClick={downloadTxt}
                 className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 border border-gray-200 rounded-lg px-2.5 py-1.5 hover:bg-gray-100 transition-colors"
               >
                 <Download className="w-3.5 h-3.5" />
-                다운로드
+                TXT
               </button>
+              {report.download_url && (
+                <button
+                  onClick={downloadWord}
+                  className="flex items-center gap-1.5 text-xs text-white bg-red-600 hover:bg-red-700 rounded-lg px-2.5 py-1.5 transition-colors"
+                >
+                  <FileDown className="w-3.5 h-3.5" />
+                  Word
+                </button>
+              )}
             </div>
           </div>
           <div className="p-4 max-h-[500px] overflow-y-auto scrollbar-thin">

@@ -4,11 +4,10 @@ import { Upload, Send, Loader2, CheckCircle2, FileText, X } from 'lucide-react'
 import { IngestResponse } from '../types'
 
 interface Props {
-  model: string
   onSuccess: (result: IngestResponse) => void
 }
 
-export default function InputPanel({ model, onSuccess }: Props) {
+export default function InputPanel({ onSuccess }: Props) {
   const [text, setText] = useState('')
   const [files, setFiles] = useState<File[]>([])
   const [loading, setLoading] = useState(false)
@@ -23,7 +22,6 @@ export default function InputPanel({ model, onSuccess }: Props) {
     try {
       const res = await axios.post<IngestResponse>('/api/ingest/text', {
         content: text,
-        model,
       })
       setLastResult(res.data)
       onSuccess(res.data)
@@ -44,7 +42,7 @@ export default function InputPanel({ model, onSuccess }: Props) {
       setProgress(`파일 처리 중 (${i + 1}/${files.length}): ${file.name}`)
       const form = new FormData()
       form.append('file', file)
-      form.append('model', model)
+
       try {
         const res = await axios.post<IngestResponse>('/api/ingest/file', form, {
           headers: { 'Content-Type': 'multipart/form-data' },

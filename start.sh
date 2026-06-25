@@ -11,27 +11,21 @@ echo "║    FA Report Generator - LG에너지솔루션     ║"
 echo "╚══════════════════════════════════════════════╝"
 echo ""
 
-# 1. Ollama 상태 확인
-echo "[1/3] Ollama 상태 확인..."
-if ! command -v ollama &>/dev/null; then
-    echo "  ⚠  Ollama가 설치되어 있지 않습니다."
-    echo "     bash scripts/install_ollama.sh 를 먼저 실행하세요."
+# 환경 변수 확인
+if [ -z "$ANTHROPIC_API_KEY" ] && [ -f ".env" ]; then
+    export $(grep -v '^#' .env | xargs)
+fi
+
+if [ -z "$ANTHROPIC_API_KEY" ]; then
+    echo "  ⚠  ANTHROPIC_API_KEY가 설정되어 있지 않습니다."
+    echo "     .env 파일 또는 환경 변수로 설정하세요."
     exit 1
 fi
+echo "  ✓ ANTHROPIC_API_KEY 확인됨"
 
-if ! curl -s http://localhost:11434/api/tags &>/dev/null; then
-    echo "  → Ollama 서버 시작 중..."
-    ollama serve &>/dev/null &
-    OLLAMA_PID=$!
-    sleep 3
-    echo "  ✓ Ollama 서버 시작됨 (PID: $OLLAMA_PID)"
-else
-    echo "  ✓ Ollama 이미 실행 중"
-fi
-
-# 2. Backend 시작
+# 1. Backend 시작
 echo ""
-echo "[2/3] Backend 시작 (FastAPI, port 8000)..."
+echo "[1/2] Backend 시작 (FastAPI, port 8000)..."
 uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload &>/tmp/fa-backend.log &
 BACKEND_PID=$!
 sleep 2
@@ -43,11 +37,10 @@ else
     exit 1
 fi
 
-# 3. Frontend 시작
+# 2. Frontend 시작
 echo ""
-echo "[3/3] Frontend 시작 (React, port 5173)..."
+echo "[2/2] Frontend 시작 (React, port 5173)..."
 
-# npm이 있으면 dev 서버, 없으면 빌드된 파일 서빙
 if [ -d "frontend/node_modules" ]; then
     cd frontend && npm run dev &>/tmp/fa-frontend.log &
     FRONTEND_PID=$!
@@ -63,20 +56,18 @@ echo ""
 echo "══════════════════════════════════════════════"
 echo "  ✅ 시스템 시작 완료"
 echo ""
-echo "  🌐 웹 UI:    http://localhost:5173"
-echo "  📡 API:      http://localhost:8000"
-echo "  📚 API 문서: http://localhost:8000/docs"
+echo "  웹 UI:    http://localhost:5173"
+echo "  API:      http://localhost:8000"
+echo "  API 문서: http://localhost:8000/docs"
 echo ""
 echo "  종료: Ctrl+C"
 echo "══════════════════════════════════════════════"
 
-# 프로세스 종료 핸들러
 cleanup() {
     echo ""
     echo "시스템 종료 중..."
     kill $BACKEND_PID 2>/dev/null || true
     kill $FRONTEND_PID 2>/dev/null || true
-    kill $OLLAMA_PID 2>/dev/null || true
     echo "완료"
 }
 trap cleanup EXIT INT TERM

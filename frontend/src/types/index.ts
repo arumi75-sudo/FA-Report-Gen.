@@ -40,13 +40,8 @@ export interface Report {
   title: string
   final_content: string
   model_used: string | null
+  download_url: string | null
   created_at: string
-}
-
-export interface OllamaModel {
-  name: string
-  size: number
-  modified_at: string | null
 }
 
 export interface IngestResponse {

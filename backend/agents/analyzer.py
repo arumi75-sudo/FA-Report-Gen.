@@ -1,7 +1,7 @@
 """Analyzer Agent: 입력 텍스트에서 Site/Project/Issue 키워드를 추출."""
 import json
 import re
-from backend.services import ollama_client
+from backend.services import claude_client
 
 SYSTEM_PROMPT = """당신은 LG에너지솔루션의 현장(Site), 프로젝트, 이슈를 분석하는 전문 AI입니다.
 주어진 텍스트에서 다음 정보를 추출하여 반드시 JSON 형식으로만 응답하세요.
@@ -30,10 +30,10 @@ FALLBACK_RESULT = {
 }
 
 
-async def analyze(text: str, model: str) -> dict:
+async def analyze(text: str) -> dict:
     prompt = f"다음 텍스트를 분석하세요:\n\n{text[:4000]}"
     try:
-        response = await ollama_client.chat(model, prompt, system=SYSTEM_PROMPT)
+        response = await claude_client.chat(prompt, system=SYSTEM_PROMPT)
         return _parse_json(response)
     except Exception as e:
         print(f"[Analyzer] 오류: {e}")
@@ -41,7 +41,6 @@ async def analyze(text: str, model: str) -> dict:
 
 
 def _parse_json(text: str) -> dict:
-    # JSON 블록 추출 시도
     match = re.search(r"\{.*\}", text, re.DOTALL)
     if match:
         try:

@@ -1,14 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from pydantic import BaseModel
 from datetime import datetime
+import os
 
 from backend.database import get_db
 from backend.models.schema import ReportItem, Report, InputData
 from backend.agents.summarizer import generate_final_report
+from scripts.generate_word import generate_word_document
 
 router = APIRouter(prefix="/api", tags=["reports"])
+
+OUTPUTS_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "outputs")
 
 
 class ReportItemOut(BaseModel):
@@ -31,7 +36,6 @@ class ToggleRequest(BaseModel):
 
 class GenerateRequest(BaseModel):
     title: str
-    model: str = "exaone3.5:7.8b"
     site_id: int | None = None
 
 
@@ -40,6 +44,7 @@ class ReportOut(BaseModel):
     title: str
     final_content: str
     model_used: str | None
+    download_url: str | None = None
     created_at: datetime
 
     class Config:
@@ -112,12 +117,31 @@ async def generate_report(req: GenerateRequest, db: AsyncSession = Depends(get_d
     if not included:
         raise HTTPException(400, "포함된 보고서 항목이 없습니다.")
 
-    content = await generate_final_report(included, req.model, req.title)
-    report = Report(title=req.title, final_content=content, model_used=req.model)
+    content = await generate_final_report(included, req.title)
+    report = Report(title=req.title, final_content=content, model_used="claude-sonnet-4-6")
     db.add(report)
     await db.commit()
     await db.refresh(report)
-    return report
+
+    # Word 문서 생성
+    download_url = None
+    try:
+        os.makedirs(OUTPUTS_DIR, exist_ok=True)
+        filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{report.id}.docx"
+        filepath = os.path.join(OUTPUTS_DIR, filename)
+        generate_word_document(content, req.title, filepath)
+        download_url = f"/outputs/{filename}"
+    except Exception as e:
+        print(f"[Word 생성 오류] {e}")
+
+    return ReportOut(
+        id=report.id,
+        title=report.title,
+        final_content=report.final_content,
+        model_used=report.model_used,
+        download_url=download_url,
+        created_at=report.created_at,
+    )
 
 
 @router.get("/reports", response_model=list[ReportOut])
